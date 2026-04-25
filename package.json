@@ -1,0 +1,15 @@
+{
+  "name": "ryvio-ai",
+  "version": "1.0.0",
+  "description": "Ryvio AI - Your business data, instantly understood",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "compression": "^1.8.1",
+    "express": "^4.18.2",
+    "helmet": "^8.1.0"
+  }
+}
