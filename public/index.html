@@ -808,8 +808,7 @@
       <li><a href="#">Pricing</a></li>
     </ul>
     <div class="nav-right">
-      <button class="btn-login">Log In</button>
-      <button class="btn-signup">Sign Up</button>
+      <a href="/app" class="btn-signup" style="text-decoration:none;">Try It Free</a>
     </div>
   </nav>
 
@@ -823,9 +822,9 @@
     <h1 class="animate-in delay-1">Connect your data. Ask anything.</h1>
     <p class="hero-tagline animate-in delay-1" style="font-size:14px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);margin-top:-20px;margin-bottom:24px;font-weight:500;">Analytics. Automated.</p>
 
-    <div class="chat-container animate-in delay-2">
+    <div class="chat-container animate-in delay-2" onclick="window.location='/app'" style="cursor:pointer">
       <div class="chat-input-area">
-        <input type="text" class="chat-input" placeholder="What were my top-selling products last month?">
+        <input type="text" class="chat-input" placeholder="What were my top-selling products last month?" style="pointer-events:none">
       </div>
       <div class="chat-toolbar">
         <div class="chat-toolbar-left">

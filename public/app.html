@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ryvio AI | Your Data Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --primary: #4F6BED;
+      --primary-light: #6B82F0;
+      --primary-dark: #3A53D4;
+      --purple: #8B5CF6;
+      --green: #10B981;
+      --orange: #F59E0B;
+      --red: #EF4444;
+      --teal: #14B8A6;
+      --bg: #F8F9FB;
+      --white: #FFFFFF;
+      --text: #1A1A2E;
+      --text2: #6B7280;
+      --text3: #9CA3AF;
+      --border: #E5E7EB;
+      --border-light: #F3F4F6;
+    }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* Top Bar */
+    .topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 24px; background:var(--white); border-bottom:1px solid var(--border);
+    }
+    .topbar-logo {
+      font-size:16px; font-weight:600; letter-spacing:0.25em; text-transform:uppercase;
+      color:var(--text); text-decoration:none;
+    }
+    .topbar-logo .ai { background:linear-gradient(135deg,#8B5CF6,#6B82F0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .topbar-right { display:flex; align-items:center; gap:12px; }
+    .topbar-file { font-size:13px; color:var(--text2); display:flex; align-items:center; gap:6px; }
+    .topbar-file svg { width:16px; height:16px; }
+    .btn-new { padding:8px 16px; font-size:13px; font-weight:600; color:var(--primary); background:rgba(79,107,237,0.08); border:none; border-radius:8px; cursor:pointer; font-family:inherit; }
+    .btn-new:hover { background:rgba(79,107,237,0.15); }
+
+    /* Upload Screen */
+    .upload-screen {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-height:calc(100vh - 57px); padding:40px 24px;
+    }
+    .upload-screen.hidden { display:none; }
+    .upload-title { font-size:32px; font-weight:700; margin-bottom:8px; text-align:center; }
+    .upload-sub { font-size:16px; color:var(--text2); margin-bottom:40px; text-align:center; max-width:500px; }
+
+    .drop-zone {
+      width:100%; max-width:560px; padding:60px 40px; border:2px dashed var(--border);
+      border-radius:20px; text-align:center; cursor:pointer;
+      transition:border-color 0.3s, background 0.3s;
+      background:var(--white);
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color:var(--primary); background:rgba(79,107,237,0.03);
+    }
+    .drop-zone-icon { font-size:48px; margin-bottom:16px; }
+    .drop-zone h3 { font-size:18px; font-weight:600; margin-bottom:8px; }
+    .drop-zone p { font-size:14px; color:var(--text2); margin-bottom:20px; }
+    .drop-zone .btn-browse {
+      display:inline-block; padding:12px 32px; font-size:15px; font-weight:600;
+      color:white; background:var(--primary); border:none; border-radius:10px;
+      cursor:pointer; font-family:inherit; transition:background 0.2s;
+    }
+    .drop-zone .btn-browse:hover { background:var(--primary-dark); }
+    .drop-zone input { display:none; }
+    .upload-formats { margin-top:16px; font-size:13px; color:var(--text3); }
+
+    .upload-or { margin:24px 0; font-size:14px; color:var(--text3); }
+    .demo-btn {
+      padding:12px 28px; font-size:14px; font-weight:500; color:var(--primary);
+      background:var(--white); border:1px solid var(--border); border-radius:10px;
+      cursor:pointer; font-family:inherit; transition:all 0.2s;
+    }
+    .demo-btn:hover { border-color:var(--primary); background:rgba(79,107,237,0.03); }
+
+    /* Loading */
+    .loading { display:none; flex-direction:column; align-items:center; gap:16px; margin-top:32px; }
+    .loading.show { display:flex; }
+    .spinner { width:40px; height:40px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-text { font-size:15px; color:var(--text2); }
+
+    /* Dashboard */
+    .dashboard { display:none; }
+    .dashboard.show { display:block; }
+
+    .dash-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:20px;
+      max-width:1200px; margin:0 auto; padding:24px;
+    }
+    @media(max-width:768px) { .dash-grid { grid-template-columns:1fr; } }
+
+    /* Stat Cards Row */
+    .stats-row {
+      grid-column:1/-1; display:flex; gap:16px; flex-wrap:wrap;
+    }
+    .stat-card {
+      flex:1; min-width:160px; background:var(--white); border:1px solid var(--border);
+      border-radius:14px; padding:20px;
+    }
+    .stat-label { font-size:13px; color:var(--text2); margin-bottom:4px; }
+    .stat-value { font-size:28px; font-weight:700; }
+    .stat-sub { font-size:12px; color:var(--text3); margin-top:2px; }
+
+    /* Chart Card */
+    .chart-card {
+      background:var(--white); border:1px solid var(--border); border-radius:14px;
+      padding:20px; overflow:hidden;
+    }
+    .chart-card.full { grid-column:1/-1; }
+    .chart-card h3 { font-size:15px; font-weight:600; margin-bottom:16px; }
+    .chart-card canvas { width:100%!important; max-height:300px; }
+
+    /* Data Table */
+    .table-card {
+      grid-column:1/-1; background:var(--white); border:1px solid var(--border);
+      border-radius:14px; padding:20px; overflow-x:auto;
+    }
+    .table-card h3 { font-size:15px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+    .row-count { font-size:12px; font-weight:500; color:var(--text3); background:var(--border-light); padding:2px 8px; border-radius:10px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; padding:10px 12px; border-bottom:2px solid var(--border); font-weight:600; color:var(--text2); white-space:nowrap; }
+    td { padding:10px 12px; border-bottom:1px solid var(--border-light); }
+    tr:hover td { background:var(--border-light); }
+
+    /* Chat */
+    .chat-panel {
+      grid-column:1/-1; background:var(--white); border:1px solid var(--border);
+      border-radius:14px; overflow:hidden;
+    }
+    .chat-header {
+      padding:16px 20px; border-bottom:1px solid var(--border);
+      font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px;
+    }
+    .chat-header svg { width:20px; height:20px; color:var(--primary); }
+    .chat-messages {
+      padding:20px; min-height:200px; max-height:400px; overflow-y:auto;
+      display:flex; flex-direction:column; gap:16px;
+    }
+    .chat-msg {
+      max-width:85%; padding:12px 16px; border-radius:14px; font-size:14px; line-height:1.6;
+    }
+    .chat-msg.user {
+      align-self:flex-end; background:var(--primary); color:white; border-bottom-right-radius:4px;
+    }
+    .chat-msg.ai {
+      align-self:flex-start; background:var(--border-light); color:var(--text); border-bottom-left-radius:4px;
+    }
+    .chat-msg.ai .chart-inline { margin-top:12px; }
+    .chat-msg.ai .chart-inline canvas { max-height:220px; border-radius:8px; }
+    .chat-typing { align-self:flex-start; padding:12px 16px; background:var(--border-light); border-radius:14px; font-size:14px; color:var(--text3); }
+
+    .chat-input-row {
+      display:flex; gap:8px; padding:16px 20px; border-top:1px solid var(--border);
+    }
+    .chat-input {
+      flex:1; padding:12px 16px; font-size:14px; border:1px solid var(--border);
+      border-radius:10px; outline:none; font-family:inherit; background:var(--bg);
+    }
+    .chat-input:focus { border-color:var(--primary); background:var(--white); }
+    .chat-send {
+      padding:12px 24px; font-size:14px; font-weight:600; color:white;
+      background:var(--primary); border:none; border-radius:10px; cursor:pointer;
+      font-family:inherit; transition:background 0.2s;
+    }
+    .chat-send:hover { background:var(--primary-dark); }
+    .chat-send:disabled { opacity:0.5; cursor:not-allowed; }
+
+    .suggestions {
+      display:flex; gap:8px; flex-wrap:wrap; padding:0 20px 16px;
+    }
+    .suggestion-chip {
+      padding:8px 14px; font-size:13px; color:var(--text2); background:var(--bg);
+      border:1px solid var(--border); border-radius:20px; cursor:pointer;
+      font-family:inherit; transition:all 0.2s;
+    }
+    .suggestion-chip:hover { border-color:var(--primary); color:var(--primary); }
+
+    .error-msg { color:var(--red); font-size:14px; margin-top:12px; text-align:center; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="topbar-logo">Ryvio<span class="ai">AI</span></a>
+  <div class="topbar-right">
+    <div class="topbar-file" id="currentFile"></div>
+    <button class="btn-new" onclick="resetApp()">+ New Data</button>
+  </div>
+</div>
+
+<!-- Upload Screen -->
+<div class="upload-screen" id="uploadScreen">
+  <h1 class="upload-title">What data do you want to explore?</h1>
+  <p class="upload-sub">Drop your spreadsheet below and we'll instantly show you charts, stats, and let you ask questions in plain English.</p>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-zone-icon">&#128202;</div>
+    <h3>Drop your file here</h3>
+    <p>or click to browse your computer</p>
+    <button class="btn-browse" onclick="document.getElementById('fileInput').click()">Choose File</button>
+    <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,.xls">
+  </div>
+  <p class="upload-formats">Supports CSV, TSV, Excel (.xlsx, .xls) - up to 50MB</p>
+
+  <p class="upload-or">or try with sample data</p>
+  <button class="demo-btn" onclick="loadDemo()">Load Demo Sales Data</button>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p class="loading-text">Analyzing your data...</p>
+  </div>
+  <p class="error-msg" id="uploadError"></p>
+</div>
+
+<!-- Dashboard -->
+<div class="dashboard" id="dashboard">
+  <div class="dash-grid">
+    <div class="stats-row" id="statsRow"></div>
+    <div id="chartsArea"></div>
+    <div class="table-card">
+      <h3>Your Data <span class="row-count" id="rowCount"></span></h3>
+      <div style="overflow-x:auto"><table id="dataTable"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="chat-panel">
+      <div class="chat-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Ask anything about your data
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg ai">Hi! I've analyzed your data. Ask me anything - like "what's my best selling product?" or "show me revenue by month".</div>
+      </div>
+      <div class="suggestions" id="suggestions"></div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="chatInput" placeholder="Ask a question about your data..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send" id="chatSend" onclick="sendChat()">Ask</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#4F6BED','#8B5CF6','#10B981','#F59E0B','#EF4444','#14B8A6','#6B82F0','#EC4899'];
+let sessionId = null;
+let chartInstances = [];
+
+// Drag & Drop
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+['dragenter','dragover'].forEach(e => {
+  dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.add('dragover'); });
+});
+['dragleave','drop'].forEach(e => {
+  dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.remove('dragover'); });
+});
+dropZone.addEventListener('drop', ev => {
+  const file = ev.dataTransfer.files[0];
+  if (file) uploadFile(file);
+});
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) uploadFile(fileInput.files[0]);
+});
+
+async function uploadFile(file) {
+  const loading = document.getElementById('loading');
+  const errorEl = document.getElementById('uploadError');
+  errorEl.textContent = '';
+  loading.classList.add('show');
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const resp = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Upload failed');
+    sessionId = data.sessionId;
+    renderDashboard(data);
+  } catch (err) {
+    errorEl.textContent = err.message;
+  } finally {
+    loading.classList.remove('show');
+  }
+}
+
+function renderDashboard(data) {
+  document.getElementById('uploadScreen').classList.add('hidden');
+  document.getElementById('dashboard').classList.add('show');
+  document.getElementById('currentFile').innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+    ${data.filename}`;
+  document.getElementById('rowCount').textContent = `${data.rowCount} rows`;
+
+  // Stats cards
+  const statsRow = document.getElementById('statsRow');
+  statsRow.innerHTML = '';
+  const numCols = data.columns.filter(c => data.columnTypes[c] === 'number');
+  const statColors = [COLORS[0], COLORS[2], COLORS[1], COLORS[3]];
+  numCols.slice(0, 4).forEach((col, i) => {
+    const s = data.stats[col];
+    statsRow.innerHTML += `
+      <div class="stat-card">
+        <div class="stat-label">${col}</div>
+        <div class="stat-value" style="color:${statColors[i]}">${formatNum(s.sum)}</div>
+        <div class="stat-sub">Avg: ${formatNum(s.avg)} | Range: ${formatNum(s.min)} - ${formatNum(s.max)}</div>
+      </div>`;
+  });
+  // Add row count card
+  statsRow.innerHTML += `
+    <div class="stat-card">
+      <div class="stat-label">Total Records</div>
+      <div class="stat-value" style="color:${COLORS[4]}">${data.rowCount.toLocaleString()}</div>
+      <div class="stat-sub">${data.columns.length} columns</div>
+    </div>`;
+
+  // Charts
+  const chartsArea = document.getElementById('chartsArea');
+  chartsArea.innerHTML = '';
+  chartInstances.forEach(c => c.destroy());
+  chartInstances = [];
+
+  data.charts.forEach((chart, i) => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = `<h3>${chart.title}</h3><canvas id="auto-chart-${i}"></canvas>`;
+    chartsArea.appendChild(card);
+
+    setTimeout(() => {
+      const ctx = document.getElementById(`auto-chart-${i}`);
+      if (!ctx) return;
+      const inst = new Chart(ctx, {
+        type: chart.type,
+        data: {
+          labels: chart.labels,
+          datasets: chart.datasets.map((ds, di) => ({
+            ...ds,
+            backgroundColor: chart.type === 'doughnut'
+              ? COLORS.slice(0, chart.labels.length)
+              : COLORS[di] + 'CC',
+            borderColor: chart.type === 'line' ? COLORS[di] : undefined,
+            borderWidth: chart.type === 'line' ? 2 : 0,
+            borderRadius: chart.type === 'bar' ? 6 : 0,
+            fill: chart.type === 'line',
+            tension: 0.4,
+            pointRadius: chart.type === 'line' ? 3 : undefined,
+          })),
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: chart.type === 'doughnut', position: 'right', labels: { font: { family: 'Inter', size: 11 }, usePointStyle: true } } },
+          scales: chart.type === 'doughnut' ? {} : {
+            x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 }, maxRotation: 45 } },
+            y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { family: 'Inter', size: 10 } } },
+          },
+          cutout: chart.type === 'doughnut' ? '60%' : undefined,
+        },
+      });
+      chartInstances.push(inst);
+    }, 50);
+  });
+
+  // Data table
+  const thead = document.querySelector('#dataTable thead');
+  const tbody = document.querySelector('#dataTable tbody');
+  thead.innerHTML = '<tr>' + data.columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
+  tbody.innerHTML = data.preview.map(row =>
+    '<tr>' + data.columns.map(c => `<td>${row[c] != null ? row[c] : ''}</td>`).join('') + '</tr>'
+  ).join('');
+
+  // Suggestions
+  const suggestions = document.getElementById('suggestions');
+  const textCols = data.columns.filter(c => data.columnTypes[c] === 'text');
+  const suggestTexts = [
+    `What are my top ${textCols[0] || 'categories'}?`,
+    numCols[0] ? `Show me ${numCols[0]} trends` : 'Summarize this data',
+    'What patterns do you see?',
+    numCols[0] && textCols[0] ? `Compare ${numCols[0]} by ${textCols[0]}` : 'What stands out?',
+  ];
+  suggestions.innerHTML = suggestTexts.map(s => `<button class="suggestion-chip" onclick="askSuggestion(this)">${s}</button>`).join('');
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg || !sessionId) return;
+
+  const messages = document.getElementById('chatMessages');
+  const sendBtn = document.getElementById('chatSend');
+
+  // Add user message
+  messages.innerHTML += `<div class="chat-msg user">${escapeHtml(msg)}</div>`;
+  input.value = '';
+  sendBtn.disabled = true;
+
+  // Add typing indicator
+  const typing = document.createElement('div');
+  typing.className = 'chat-typing';
+  typing.textContent = 'Thinking...';
+  messages.appendChild(typing);
+  messages.scrollTop = messages.scrollHeight;
+
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, message: msg }),
+    });
+    const data = await resp.json();
+    typing.remove();
+
+    if (!resp.ok) throw new Error(data.error);
+
+    // Add AI response
+    const aiMsg = document.createElement('div');
+    aiMsg.className = 'chat-msg ai';
+    aiMsg.innerHTML = formatAnswer(data.answer);
+
+    // If there's a chart, render it
+    if (data.chart) {
+      const chartDiv = document.createElement('div');
+      chartDiv.className = 'chart-inline';
+      const canvas = document.createElement('canvas');
+      canvas.style.maxHeight = '220px';
+      chartDiv.appendChild(canvas);
+      aiMsg.appendChild(chartDiv);
+      messages.appendChild(aiMsg);
+
+      const inst = new Chart(canvas, {
+        type: data.chart.type || 'bar',
+        data: {
+          labels: data.chart.labels,
+          datasets: (data.chart.datasets || []).map((ds, i) => ({
+            ...ds,
+            backgroundColor: data.chart.type === 'doughnut'
+              ? COLORS.slice(0, data.chart.labels.length)
+              : COLORS[i] + 'CC',
+            borderColor: data.chart.type === 'line' ? COLORS[i] : undefined,
+            borderWidth: data.chart.type === 'line' ? 2 : 0,
+            borderRadius: data.chart.type === 'bar' ? 6 : 0,
+            fill: data.chart.type === 'line',
+            tension: 0.4,
+          })),
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: data.chart.type === 'doughnut', position: 'right' } },
+          scales: data.chart.type === 'doughnut' ? {} : {
+            x: { grid: { display: false } },
+            y: { grid: { color: 'rgba(0,0,0,0.05)' } },
+          },
+        },
+      });
+      chartInstances.push(inst);
+    } else {
+      messages.appendChild(aiMsg);
+    }
+  } catch (err) {
+    typing.remove();
+    messages.innerHTML += `<div class="chat-msg ai" style="color:var(--red)">${err.message}</div>`;
+  }
+
+  sendBtn.disabled = false;
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function askSuggestion(btn) {
+  document.getElementById('chatInput').value = btn.textContent;
+  sendChat();
+}
+
+function loadDemo() {
+  // Generate demo CSV data
+  const headers = ['Month','Product','Category','Revenue','Units Sold','Cost'];
+  const products = ['Widget Pro','Widget Lite','Gadget X','Gadget Mini','Service Plan'];
+  const categories = ['Electronics','Electronics','Accessories','Accessories','Services'];
+  const months = ['Jan 2025','Feb 2025','Mar 2025','Apr 2025','May 2025','Jun 2025','Jul 2025','Aug 2025','Sep 2025','Oct 2025','Nov 2025','Dec 2025'];
+
+  let csv = headers.join(',') + '\n';
+  months.forEach(m => {
+    products.forEach((p, pi) => {
+      const rev = Math.floor(Math.random() * 5000 + 2000);
+      const units = Math.floor(Math.random() * 200 + 50);
+      const cost = Math.floor(rev * (0.4 + Math.random() * 0.2));
+      csv += `${m},${p},${categories[pi]},${rev},${units},${cost}\n`;
+    });
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const file = new File([blob], 'demo_sales_data.csv', { type: 'text/csv' });
+  uploadFile(file);
+}
+
+function resetApp() {
+  sessionId = null;
+  document.getElementById('uploadScreen').classList.remove('hidden');
+  document.getElementById('dashboard').classList.remove('show');
+  document.getElementById('currentFile').innerHTML = '';
+  document.getElementById('chatMessages').innerHTML = '<div class="chat-msg ai">Hi! I\'ve analyzed your data. Ask me anything.</div>';
+  chartInstances.forEach(c => c.destroy());
+  chartInstances = [];
+}
+
+function formatNum(n) {
+  if (n == null || isNaN(n)) return '0';
+  if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (Math.abs(n) >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function formatAnswer(text) {
+  return escapeHtml(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+</script>
+</body>
+</html>
