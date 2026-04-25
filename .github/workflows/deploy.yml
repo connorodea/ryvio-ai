@@ -1,0 +1,58 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HETZNER_CO_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ secrets.HETZNER_CO_PORT || 22 }} ${{ secrets.HETZNER_CO_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Sync source to server
+        env:
+          HOST: ${{ secrets.HETZNER_CO_HOST }}
+          USER: ${{ secrets.HETZNER_CO_USER }}
+          PORT: ${{ secrets.HETZNER_CO_PORT || 22 }}
+        run: |
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=no"
+          APP_DIR="/var/www/ryvio-ai"
+
+          echo "==> Syncing source files to server..."
+          rsync -avz --delete \
+            --exclude='.env' \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            -e "$SSH_CMD" \
+            ./ $USER@$HOST:$APP_DIR/
+
+      - name: Build and restart on server
+        env:
+          HOST: ${{ secrets.HETZNER_CO_HOST }}
+          USER: ${{ secrets.HETZNER_CO_USER }}
+          PORT: ${{ secrets.HETZNER_CO_PORT || 22 }}
+        run: |
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=no"
+          $SSH_CMD $USER@$HOST "bash /var/www/ryvio-ai/deploy/deploy.sh"
+
+      - name: Verify deployment
+        env:
+          HOST: ${{ secrets.HETZNER_CO_HOST }}
+          USER: ${{ secrets.HETZNER_CO_USER }}
+          PORT: ${{ secrets.HETZNER_CO_PORT || 22 }}
+        run: |
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -p $PORT -o StrictHostKeyChecking=no"
+          $SSH_CMD $USER@$HOST "systemctl is-active ryvio-ai && curl -sf http://localhost:3040/health && echo '' && echo 'Deployment verified!'"
