@@ -4,532 +4,445 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ryvio AI | Your Data Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
   <style>
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-    :root {
-      --primary: #4F6BED;
-      --primary-light: #6B82F0;
-      --primary-dark: #3A53D4;
-      --purple: #8B5CF6;
-      --green: #10B981;
-      --orange: #F59E0B;
-      --red: #EF4444;
-      --teal: #14B8A6;
-      --bg: #F8F9FB;
-      --white: #FFFFFF;
-      --text: #1A1A2E;
-      --text2: #6B7280;
-      --text3: #9CA3AF;
-      --border: #E5E7EB;
-      --border-light: #F3F4F6;
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --p:#4F6BED;--p2:#6B82F0;--p3:#3A53D4;--pur:#8B5CF6;--g:#10B981;--o:#F59E0B;--r:#EF4444;--t:#14B8A6;--pk:#EC4899;
+      --bg:#F5F6FA;--white:#fff;--tx:#111827;--tx2:#4B5563;--tx3:#9CA3AF;--bd:#E5E7EB;--bd2:#F3F4F6;
+      --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+      --shadow-lg:0 10px 40px rgba(0,0,0,0.08);
+      --radius:16px;
     }
-    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
 
-    /* Top Bar */
-    .topbar {
-      display:flex; align-items:center; justify-content:space-between;
-      padding:12px 24px; background:var(--white); border-bottom:1px solid var(--border);
-    }
-    .topbar-logo {
-      font-size:16px; font-weight:600; letter-spacing:0.25em; text-transform:uppercase;
-      color:var(--text); text-decoration:none;
-    }
-    .topbar-logo .ai { background:linear-gradient(135deg,#8B5CF6,#6B82F0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-    .topbar-right { display:flex; align-items:center; gap:12px; }
-    .topbar-file { font-size:13px; color:var(--text2); display:flex; align-items:center; gap:6px; }
-    .topbar-file svg { width:16px; height:16px; }
-    .btn-new { padding:8px 16px; font-size:13px; font-weight:600; color:var(--primary); background:rgba(79,107,237,0.08); border:none; border-radius:8px; cursor:pointer; font-family:inherit; }
-    .btn-new:hover { background:rgba(79,107,237,0.15); }
+    /* ── Top Bar ── */
+    .top{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--white);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:50;backdrop-filter:blur(20px)}
+    .top-logo{font-size:15px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;text-decoration:none;color:var(--tx)}
+    .top-logo b{background:linear-gradient(135deg,#8B5CF6,#6B82F0);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .top-r{display:flex;align-items:center;gap:10px}
+    .top-file{font-size:12px;color:var(--tx2);background:var(--bd2);padding:6px 12px;border-radius:8px;display:none;align-items:center;gap:6px}
+    .top-file svg{width:14px;height:14px;flex-shrink:0}
+    .btn-sm{padding:7px 16px;font-size:12px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+    .btn-ghost{color:var(--tx2);background:transparent}.btn-ghost:hover{background:var(--bd2)}
+    .btn-pri{color:#fff;background:var(--p)}.btn-pri:hover{background:var(--p3)}
 
-    /* Upload Screen */
-    .upload-screen {
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      min-height:calc(100vh - 57px); padding:40px 24px;
-    }
-    .upload-screen.hidden { display:none; }
-    .upload-title { font-size:32px; font-weight:700; margin-bottom:8px; text-align:center; }
-    .upload-sub { font-size:16px; color:var(--text2); margin-bottom:40px; text-align:center; max-width:500px; }
+    /* ── Upload Screen ── */
+    .upload{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 57px);padding:48px 24px}
+    .upload.gone{display:none}
+    .upload h1{font-size:36px;font-weight:800;letter-spacing:-.5px;text-align:center;margin-bottom:10px;line-height:1.2}
+    .upload h1 em{font-style:normal;background:linear-gradient(135deg,var(--p),var(--pur));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .upload .sub{font-size:15px;color:var(--tx2);text-align:center;max-width:480px;margin-bottom:40px;line-height:1.6}
 
-    .drop-zone {
-      width:100%; max-width:560px; padding:60px 40px; border:2px dashed var(--border);
-      border-radius:20px; text-align:center; cursor:pointer;
-      transition:border-color 0.3s, background 0.3s;
-      background:var(--white);
-    }
-    .drop-zone:hover, .drop-zone.dragover {
-      border-color:var(--primary); background:rgba(79,107,237,0.03);
-    }
-    .drop-zone-icon { font-size:48px; margin-bottom:16px; }
-    .drop-zone h3 { font-size:18px; font-weight:600; margin-bottom:8px; }
-    .drop-zone p { font-size:14px; color:var(--text2); margin-bottom:20px; }
-    .drop-zone .btn-browse {
-      display:inline-block; padding:12px 32px; font-size:15px; font-weight:600;
-      color:white; background:var(--primary); border:none; border-radius:10px;
-      cursor:pointer; font-family:inherit; transition:background 0.2s;
-    }
-    .drop-zone .btn-browse:hover { background:var(--primary-dark); }
-    .drop-zone input { display:none; }
-    .upload-formats { margin-top:16px; font-size:13px; color:var(--text3); }
+    .input-modes{display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;justify-content:center}
+    .mode-btn{padding:10px 20px;font-size:13px;font-weight:600;color:var(--tx2);background:var(--white);border:1.5px solid var(--bd);border-radius:12px;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;gap:8px}
+    .mode-btn:hover,.mode-btn.active{border-color:var(--p);color:var(--p);background:rgba(79,107,237,.04)}
+    .mode-btn svg{width:18px;height:18px}
 
-    .upload-or { margin:24px 0; font-size:14px; color:var(--text3); }
-    .demo-btn {
-      padding:12px 28px; font-size:14px; font-weight:500; color:var(--primary);
-      background:var(--white); border:1px solid var(--border); border-radius:10px;
-      cursor:pointer; font-family:inherit; transition:all 0.2s;
-    }
-    .demo-btn:hover { border-color:var(--primary); background:rgba(79,107,237,0.03); }
+    .drop{width:100%;max-width:600px;padding:56px 40px;border:2px dashed var(--bd);border-radius:20px;text-align:center;cursor:pointer;background:var(--white);transition:all .3s}
+    .drop:hover,.drop.over{border-color:var(--p);background:rgba(79,107,237,.02);transform:scale(1.01)}
+    .drop-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,rgba(79,107,237,.1),rgba(139,92,246,.1));display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:26px}
+    .drop h3{font-size:17px;font-weight:700;margin-bottom:6px}
+    .drop p{font-size:14px;color:var(--tx3);margin-bottom:20px}
+    .drop input{display:none}
+    .btn-lg{padding:14px 36px;font-size:15px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--p),var(--pur));border:none;border-radius:12px;cursor:pointer;font-family:inherit;transition:all .2s;box-shadow:0 4px 14px rgba(79,107,237,.3)}
+    .btn-lg:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(79,107,237,.4)}
+    .formats{font-size:12px;color:var(--tx3);margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+    .formats span{background:var(--bd2);padding:3px 8px;border-radius:6px;font-weight:500}
+
+    /* Paste Mode */
+    .paste-area{width:100%;max-width:600px;display:none}
+    .paste-area.show{display:block}
+    .paste-area textarea{width:100%;min-height:200px;padding:20px;border:1.5px solid var(--bd);border-radius:16px;font-size:14px;font-family:'Inter',monospace;resize:vertical;outline:none;background:var(--white);transition:border-color .2s}
+    .paste-area textarea:focus{border-color:var(--p)}
+    .paste-area textarea::placeholder{color:var(--tx3)}
+    .paste-actions{display:flex;gap:10px;margin-top:12px;justify-content:flex-end}
+
+    .or{color:var(--tx3);font-size:13px;margin:20px 0;font-weight:500}
+    .demo-btn{padding:10px 24px;font-size:13px;font-weight:600;color:var(--p);background:var(--white);border:1.5px solid var(--bd);border-radius:10px;cursor:pointer;font-family:inherit;transition:all .2s}
+    .demo-btn:hover{border-color:var(--p);background:rgba(79,107,237,.04)}
 
     /* Loading */
-    .loading { display:none; flex-direction:column; align-items:center; gap:16px; margin-top:32px; }
-    .loading.show { display:flex; }
-    .spinner { width:40px; height:40px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    .loading-text { font-size:15px; color:var(--text2); }
+    .loader{display:none;flex-direction:column;align-items:center;gap:16px;margin-top:32px}
+    .loader.on{display:flex}
+    .spin{width:44px;height:44px;border:3px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:sp .7s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+    .loader p{font-size:14px;color:var(--tx2);font-weight:500}
+    .err{color:var(--r);font-size:14px;margin-top:12px;text-align:center;font-weight:500}
 
-    /* Dashboard */
-    .dashboard { display:none; }
-    .dashboard.show { display:block; }
+    /* ── Dashboard ── */
+    .dash{display:none}
+    .dash.on{display:block}
+    .grid{max-width:1280px;margin:0 auto;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    .full{grid-column:1/-1}
 
-    .dash-grid {
-      display:grid; grid-template-columns:1fr 1fr; gap:20px;
-      max-width:1200px; margin:0 auto; padding:24px;
-    }
-    @media(max-width:768px) { .dash-grid { grid-template-columns:1fr; } }
+    /* Stats */
+    .stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+    .stat{background:var(--white);border:1px solid var(--bd);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);transition:transform .2s}
+    .stat:hover{transform:translateY(-2px)}
+    .stat-l{font-size:12px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+    .stat-v{font-size:26px;font-weight:800;letter-spacing:-.5px}
+    .stat-s{font-size:11px;color:var(--tx3);margin-top:4px}
 
-    /* Stat Cards Row */
-    .stats-row {
-      grid-column:1/-1; display:flex; gap:16px; flex-wrap:wrap;
-    }
-    .stat-card {
-      flex:1; min-width:160px; background:var(--white); border:1px solid var(--border);
-      border-radius:14px; padding:20px;
-    }
-    .stat-label { font-size:13px; color:var(--text2); margin-bottom:4px; }
-    .stat-value { font-size:28px; font-weight:700; }
-    .stat-sub { font-size:12px; color:var(--text3); margin-top:2px; }
+    /* Cards */
+    .card{background:var(--white);border:1px solid var(--bd);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;overflow:hidden}
+    .card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+    .card h3{font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .card h3 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .card canvas{width:100%!important;max-height:280px}
 
-    /* Chart Card */
-    .chart-card {
-      background:var(--white); border:1px solid var(--border); border-radius:14px;
-      padding:20px; overflow:hidden;
-    }
-    .chart-card.full { grid-column:1/-1; }
-    .chart-card h3 { font-size:15px; font-weight:600; margin-bottom:16px; }
-    .chart-card canvas { width:100%!important; max-height:300px; }
+    /* Table */
+    .tbl-wrap{overflow-x:auto;max-height:400px;overflow-y:auto}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--bd);font-weight:700;color:var(--tx2);white-space:nowrap;position:sticky;top:0;background:var(--white);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid var(--bd2);white-space:nowrap}
+    tr:hover td{background:var(--bd2)}
+    .badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:8px;background:var(--bd2);color:var(--tx3)}
 
-    /* Data Table */
-    .table-card {
-      grid-column:1/-1; background:var(--white); border:1px solid var(--border);
-      border-radius:14px; padding:20px; overflow-x:auto;
-    }
-    .table-card h3 { font-size:15px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
-    .row-count { font-size:12px; font-weight:500; color:var(--text3); background:var(--border-light); padding:2px 8px; border-radius:10px; }
-    table { width:100%; border-collapse:collapse; font-size:13px; }
-    th { text-align:left; padding:10px 12px; border-bottom:2px solid var(--border); font-weight:600; color:var(--text2); white-space:nowrap; }
-    td { padding:10px 12px; border-bottom:1px solid var(--border-light); }
-    tr:hover td { background:var(--border-light); }
+    /* Raw Text Card */
+    .raw-text{white-space:pre-wrap;font-size:13px;line-height:1.7;color:var(--tx2);max-height:300px;overflow-y:auto;background:var(--bd2);padding:16px;border-radius:12px}
 
     /* Chat */
-    .chat-panel {
-      grid-column:1/-1; background:var(--white); border:1px solid var(--border);
-      border-radius:14px; overflow:hidden;
-    }
-    .chat-header {
-      padding:16px 20px; border-bottom:1px solid var(--border);
-      font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px;
-    }
-    .chat-header svg { width:20px; height:20px; color:var(--primary); }
-    .chat-messages {
-      padding:20px; min-height:200px; max-height:400px; overflow-y:auto;
-      display:flex; flex-direction:column; gap:16px;
-    }
-    .chat-msg {
-      max-width:85%; padding:12px 16px; border-radius:14px; font-size:14px; line-height:1.6;
-    }
-    .chat-msg.user {
-      align-self:flex-end; background:var(--primary); color:white; border-bottom-right-radius:4px;
-    }
-    .chat-msg.ai {
-      align-self:flex-start; background:var(--border-light); color:var(--text); border-bottom-left-radius:4px;
-    }
-    .chat-msg.ai .chart-inline { margin-top:12px; }
-    .chat-msg.ai .chart-inline canvas { max-height:220px; border-radius:8px; }
-    .chat-typing { align-self:flex-start; padding:12px 16px; background:var(--border-light); border-radius:14px; font-size:14px; color:var(--text3); }
+    .chat{grid-column:1/-1;background:var(--white);border:1px solid var(--bd);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+    .chat-hd{padding:16px 24px;border-bottom:1px solid var(--bd);font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(79,107,237,.03),rgba(139,92,246,.03))}
+    .chat-hd .ico{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--p),var(--pur));display:flex;align-items:center;justify-content:center}
+    .chat-hd .ico svg{width:18px;height:18px;color:#fff}
+    .msgs{padding:20px 24px;min-height:200px;max-height:500px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+    .msg{max-width:80%;padding:14px 18px;border-radius:16px;font-size:14px;line-height:1.7}
+    .msg.u{align-self:flex-end;background:linear-gradient(135deg,var(--p),var(--pur));color:#fff;border-bottom-right-radius:4px;font-weight:500}
+    .msg.a{align-self:flex-start;background:var(--bd2);color:var(--tx);border-bottom-left-radius:4px}
+    .msg.a strong{color:var(--p)}
+    .msg .ci{margin-top:14px;background:var(--white);border-radius:12px;padding:12px;border:1px solid var(--bd)}
+    .msg .ci canvas{max-height:200px}
+    .typing{align-self:flex-start;padding:14px 18px;background:var(--bd2);border-radius:16px;color:var(--tx3);font-size:13px;display:flex;align-items:center;gap:8px}
+    .typing .dots span{width:6px;height:6px;border-radius:50%;background:var(--tx3);display:inline-block;animation:bounce .6s infinite alternate}
+    .typing .dots span:nth-child(2){animation-delay:.2s}
+    .typing .dots span:nth-child(3){animation-delay:.4s}
+    @keyframes bounce{to{opacity:.3;transform:translateY(-4px)}}
 
-    .chat-input-row {
-      display:flex; gap:8px; padding:16px 20px; border-top:1px solid var(--border);
-    }
-    .chat-input {
-      flex:1; padding:12px 16px; font-size:14px; border:1px solid var(--border);
-      border-radius:10px; outline:none; font-family:inherit; background:var(--bg);
-    }
-    .chat-input:focus { border-color:var(--primary); background:var(--white); }
-    .chat-send {
-      padding:12px 24px; font-size:14px; font-weight:600; color:white;
-      background:var(--primary); border:none; border-radius:10px; cursor:pointer;
-      font-family:inherit; transition:background 0.2s;
-    }
-    .chat-send:hover { background:var(--primary-dark); }
-    .chat-send:disabled { opacity:0.5; cursor:not-allowed; }
+    .sugs{display:flex;gap:8px;flex-wrap:wrap;padding:0 24px 14px}
+    .sug{padding:8px 14px;font-size:12px;font-weight:600;color:var(--tx2);background:var(--white);border:1px solid var(--bd);border-radius:20px;cursor:pointer;font-family:inherit;transition:all .2s}
+    .sug:hover{border-color:var(--p);color:var(--p);background:rgba(79,107,237,.04)}
 
-    .suggestions {
-      display:flex; gap:8px; flex-wrap:wrap; padding:0 20px 16px;
-    }
-    .suggestion-chip {
-      padding:8px 14px; font-size:13px; color:var(--text2); background:var(--bg);
-      border:1px solid var(--border); border-radius:20px; cursor:pointer;
-      font-family:inherit; transition:all 0.2s;
-    }
-    .suggestion-chip:hover { border-color:var(--primary); color:var(--primary); }
+    .chat-in{display:flex;gap:10px;padding:16px 24px;border-top:1px solid var(--bd);background:var(--bd2)}
+    .chat-in input{flex:1;padding:14px 18px;font-size:14px;border:1.5px solid var(--bd);border-radius:12px;outline:none;font-family:inherit;background:var(--white);transition:border-color .2s}
+    .chat-in input:focus{border-color:var(--p)}
+    .chat-in button{padding:14px 28px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--p),var(--pur));border:none;border-radius:12px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
+    .chat-in button:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(79,107,237,.3)}
+    .chat-in button:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
 
-    .error-msg { color:var(--red); font-size:14px; margin-top:12px; text-align:center; }
+    /* Summary card for documents */
+    .doc-summary{background:linear-gradient(135deg,rgba(79,107,237,.04),rgba(139,92,246,.04));border:1px solid rgba(79,107,237,.15);border-radius:var(--radius);padding:24px}
+    .doc-summary h3{font-size:16px;font-weight:700;margin-bottom:8px;color:var(--p)}
+    .doc-summary p{font-size:14px;color:var(--tx2);line-height:1.6}
   </style>
 </head>
 <body>
 
-<div class="topbar">
-  <a href="/" class="topbar-logo">Ryvio<span class="ai">AI</span></a>
-  <div class="topbar-right">
-    <div class="topbar-file" id="currentFile"></div>
-    <button class="btn-new" onclick="resetApp()">+ New Data</button>
+<div class="top">
+  <a href="/" class="top-logo">RYVIO<b>AI</b></a>
+  <div class="top-r">
+    <div class="top-file" id="curFile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg><span id="curFileName"></span></div>
+    <button class="btn-sm btn-ghost" onclick="reset()" style="display:none" id="newBtn">+ New</button>
+    <a href="/" class="btn-sm btn-ghost">Home</a>
   </div>
 </div>
 
-<!-- Upload Screen -->
-<div class="upload-screen" id="uploadScreen">
-  <h1 class="upload-title">What data do you want to explore?</h1>
-  <p class="upload-sub">Drop your spreadsheet below and we'll instantly show you charts, stats, and let you ask questions in plain English.</p>
+<!-- ── UPLOAD ── -->
+<div class="upload" id="upScreen">
+  <h1>Drop <em>anything</em>. Get answers.</h1>
+  <p class="sub">Upload a spreadsheet, PDF, receipt photo, bank statement, or just paste your data. We'll turn it into charts and insights instantly.</p>
 
-  <div class="drop-zone" id="dropZone">
-    <div class="drop-zone-icon">&#128202;</div>
-    <h3>Drop your file here</h3>
-    <p>or click to browse your computer</p>
-    <button class="btn-browse" onclick="document.getElementById('fileInput').click()">Choose File</button>
-    <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,.xls">
+  <div class="input-modes">
+    <button class="mode-btn active" onclick="setMode('file',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Upload File
+    </button>
+    <button class="mode-btn" onclick="setMode('paste',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/></svg>
+      Paste Data
+    </button>
+    <button class="mode-btn" onclick="setMode('photo',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      Photo / Screenshot
+    </button>
   </div>
-  <p class="upload-formats">Supports CSV, TSV, Excel (.xlsx, .xls) - up to 50MB</p>
 
-  <p class="upload-or">or try with sample data</p>
-  <button class="demo-btn" onclick="loadDemo()">Load Demo Sales Data</button>
-
-  <div class="loading" id="loading">
-    <div class="spinner"></div>
-    <p class="loading-text">Analyzing your data...</p>
-  </div>
-  <p class="error-msg" id="uploadError"></p>
-</div>
-
-<!-- Dashboard -->
-<div class="dashboard" id="dashboard">
-  <div class="dash-grid">
-    <div class="stats-row" id="statsRow"></div>
-    <div id="chartsArea"></div>
-    <div class="table-card">
-      <h3>Your Data <span class="row-count" id="rowCount"></span></h3>
-      <div style="overflow-x:auto"><table id="dataTable"><thead></thead><tbody></tbody></table></div>
+  <!-- File Drop -->
+  <div class="drop" id="dropZone">
+    <div class="drop-icon" id="dropIcon">&#128202;</div>
+    <h3 id="dropTitle">Drop your file here</h3>
+    <p id="dropSub">or click to browse</p>
+    <button class="btn-lg" onclick="document.getElementById('fIn').click()">Choose File</button>
+    <input type="file" id="fIn" accept=".csv,.tsv,.xlsx,.xls,.pdf,.json,.png,.jpg,.jpeg,.webp,.gif,.txt,.log,.md,.bmp">
+    <div class="formats" id="fmtHint">
+      <span>CSV</span><span>Excel</span><span>PDF</span><span>JSON</span><span>Images</span><span>Text</span>
     </div>
-    <div class="chat-panel">
-      <div class="chat-header">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+  </div>
+
+  <!-- Paste -->
+  <div class="paste-area" id="pasteArea">
+    <textarea id="pasteBox" placeholder="Paste your data here...&#10;&#10;Examples:&#10;- Copy a table from a website&#10;- Paste rows from a spreadsheet&#10;- Paste a list of numbers&#10;- Paste any text you want analyzed"></textarea>
+    <div class="paste-actions">
+      <button class="btn-sm btn-pri" onclick="submitPaste()">Analyze This</button>
+    </div>
+  </div>
+
+  <p class="or">or</p>
+  <button class="demo-btn" onclick="loadDemo()">Try with sample sales data</button>
+
+  <div class="loader" id="loader">
+    <div class="spin"></div>
+    <p id="loaderText">Analyzing your data...</p>
+  </div>
+  <p class="err" id="err"></p>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div class="dash" id="dash">
+  <div class="grid">
+    <div class="stats" id="statsArea"></div>
+    <div id="docArea" class="full" style="display:none"></div>
+    <div id="chartsArea"></div>
+    <div class="card full" id="tableCard" style="display:none">
+      <h3><span class="dot" style="background:var(--p)"></span>Your Data <span class="badge" id="rowBadge"></span></h3>
+      <div class="tbl-wrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="chat full">
+      <div class="chat-hd">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
         Ask anything about your data
       </div>
-      <div class="chat-messages" id="chatMessages">
-        <div class="chat-msg ai">Hi! I've analyzed your data. Ask me anything - like "what's my best selling product?" or "show me revenue by month".</div>
+      <div class="msgs" id="msgs">
+        <div class="msg a">Hi! I've analyzed your data. Ask me anything in plain English - like <strong>"what's my best month?"</strong> or <strong>"show me a breakdown by category"</strong>.</div>
       </div>
-      <div class="suggestions" id="suggestions"></div>
-      <div class="chat-input-row">
-        <input type="text" class="chat-input" id="chatInput" placeholder="Ask a question about your data..." onkeydown="if(event.key==='Enter')sendChat()">
-        <button class="chat-send" id="chatSend" onclick="sendChat()">Ask</button>
+      <div class="sugs" id="sugs"></div>
+      <div class="chat-in">
+        <input type="text" id="chatIn" placeholder="Ask a question..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)send()">
+        <button id="sendBtn" onclick="send()">Ask Ryvio</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-const COLORS = ['#4F6BED','#8B5CF6','#10B981','#F59E0B','#EF4444','#14B8A6','#6B82F0','#EC4899'];
-let sessionId = null;
-let chartInstances = [];
+const C=['#4F6BED','#8B5CF6','#10B981','#F59E0B','#EF4444','#14B8A6','#6B82F0','#EC4899'];
+let sid=null,charts=[];
+
+// Mode switching
+function setMode(mode,btn){
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const dz=document.getElementById('dropZone'),pa=document.getElementById('pasteArea'),fi=document.getElementById('fIn');
+  dz.style.display=mode==='paste'?'none':'block';
+  pa.classList.toggle('show',mode==='paste');
+  if(mode==='photo'){
+    fi.accept='.png,.jpg,.jpeg,.webp,.gif,.bmp';
+    document.getElementById('dropIcon').innerHTML='&#128247;';
+    document.getElementById('dropTitle').textContent='Drop a photo or screenshot';
+    document.getElementById('dropSub').textContent='receipt, invoice, chart, or any image with data';
+    document.getElementById('fmtHint').innerHTML='<span>PNG</span><span>JPG</span><span>WebP</span><span>GIF</span>';
+  } else if(mode==='file'){
+    fi.accept='.csv,.tsv,.xlsx,.xls,.pdf,.json,.png,.jpg,.jpeg,.webp,.gif,.txt,.log,.md,.bmp';
+    document.getElementById('dropIcon').innerHTML='&#128202;';
+    document.getElementById('dropTitle').textContent='Drop your file here';
+    document.getElementById('dropSub').textContent='or click to browse';
+    document.getElementById('fmtHint').innerHTML='<span>CSV</span><span>Excel</span><span>PDF</span><span>JSON</span><span>Images</span><span>Text</span>';
+  }
+}
 
 // Drag & Drop
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
+const dz=document.getElementById('dropZone');
+['dragenter','dragover'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.add('over')}));
+['dragleave','drop'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.remove('over')}));
+dz.addEventListener('drop',ev=>{if(ev.dataTransfer.files[0])upload(ev.dataTransfer.files[0])});
+dz.addEventListener('click',e=>{if(e.target.tagName!=='BUTTON')document.getElementById('fIn').click()});
+document.getElementById('fIn').addEventListener('change',function(){if(this.files[0])upload(this.files[0])});
 
-['dragenter','dragover'].forEach(e => {
-  dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.add('dragover'); });
-});
-['dragleave','drop'].forEach(e => {
-  dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.remove('dragover'); });
-});
-dropZone.addEventListener('drop', ev => {
-  const file = ev.dataTransfer.files[0];
-  if (file) uploadFile(file);
-});
-dropZone.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) uploadFile(fileInput.files[0]);
-});
-
-async function uploadFile(file) {
-  const loading = document.getElementById('loading');
-  const errorEl = document.getElementById('uploadError');
-  errorEl.textContent = '';
-  loading.classList.add('show');
-
-  const formData = new FormData();
-  formData.append('file', file);
-
-  try {
-    const resp = await fetch('/api/upload', { method: 'POST', body: formData });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || 'Upload failed');
-    sessionId = data.sessionId;
-    renderDashboard(data);
-  } catch (err) {
-    errorEl.textContent = err.message;
-  } finally {
-    loading.classList.remove('show');
-  }
+async function upload(file){
+  showLoader('Analyzing '+file.name+'...');
+  const fd=new FormData();fd.append('file',file);
+  try{
+    const r=await fetch('/api/upload',{method:'POST',body:fd});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error);
+    sid=d.sessionId;
+    render(d);
+  }catch(e){showErr(e.message)}
+  finally{hideLoader()}
 }
 
-function renderDashboard(data) {
-  document.getElementById('uploadScreen').classList.add('hidden');
-  document.getElementById('dashboard').classList.add('show');
-  document.getElementById('currentFile').innerHTML = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
-    ${data.filename}`;
-  document.getElementById('rowCount').textContent = `${data.rowCount} rows`;
+async function submitPaste(){
+  const text=document.getElementById('pasteBox').value.trim();
+  if(!text)return;
+  showLoader('Analyzing pasted data...');
+  try{
+    const r=await fetch('/api/paste',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error);
+    sid=d.sessionId;
+    render(d);
+  }catch(e){showErr(e.message)}
+  finally{hideLoader()}
+}
 
-  // Stats cards
-  const statsRow = document.getElementById('statsRow');
-  statsRow.innerHTML = '';
-  const numCols = data.columns.filter(c => data.columnTypes[c] === 'number');
-  const statColors = [COLORS[0], COLORS[2], COLORS[1], COLORS[3]];
-  numCols.slice(0, 4).forEach((col, i) => {
-    const s = data.stats[col];
-    statsRow.innerHTML += `
-      <div class="stat-card">
-        <div class="stat-label">${col}</div>
-        <div class="stat-value" style="color:${statColors[i]}">${formatNum(s.sum)}</div>
-        <div class="stat-sub">Avg: ${formatNum(s.avg)} | Range: ${formatNum(s.min)} - ${formatNum(s.max)}</div>
-      </div>`;
+function loadDemo(){
+  const h=['Month','Product','Category','Revenue','Units Sold','Cost','Profit'];
+  const prods=['Widget Pro','Widget Lite','Gadget X','Gadget Mini','Service Plan'];
+  const cats=['Electronics','Electronics','Accessories','Accessories','Services'];
+  const months=['Jan 2025','Feb 2025','Mar 2025','Apr 2025','May 2025','Jun 2025','Jul 2025','Aug 2025','Sep 2025','Oct 2025','Nov 2025','Dec 2025'];
+  let csv=h.join(',')+'\n';
+  months.forEach(m=>{prods.forEach((p,i)=>{
+    const rev=Math.floor(Math.random()*8000+3000);
+    const units=Math.floor(Math.random()*300+50);
+    const cost=Math.floor(rev*(0.35+Math.random()*0.2));
+    csv+=`${m},${p},${cats[i]},${rev},${units},${cost},${rev-cost}\n`;
+  })});
+  upload(new File([csv],'demo_sales_data.csv',{type:'text/csv'}));
+}
+
+function render(d){
+  document.getElementById('upScreen').classList.add('gone');
+  document.getElementById('dash').classList.add('on');
+  document.getElementById('curFile').style.display='flex';
+  document.getElementById('curFileName').textContent=d.filename;
+  document.getElementById('newBtn').style.display='block';
+
+  const sa=document.getElementById('statsArea');
+  sa.innerHTML='';
+  charts.forEach(c=>c.destroy());charts=[];
+
+  // Document mode (PDF text, image analysis, etc.)
+  if(d.type==='document'||d.type==='text'){
+    if(d.rowCount===0){
+      document.getElementById('docArea').style.display='block';
+      document.getElementById('docArea').innerHTML=`
+        <div class="doc-summary">
+          <h3>${d.summary||'Document Loaded'}</h3>
+          <p>This ${d.type==='document'?'document':'text'} has been loaded and is ready for questions. Ask me anything about it below!</p>
+        </div>
+        ${d.rawText?`<div class="card full" style="margin-top:20px"><h3><span class="dot" style="background:var(--pur)"></span>Extracted Content</h3><div class="raw-text">${esc(d.rawText.slice(0,3000))}${d.rawText.length>3000?'\n\n[... truncated ...]':''}</div></div>`:''}`;
+      document.getElementById('tableCard').style.display='none';
+      makeSuggestions(d,[]);
+      return;
+    }
+  }
+
+  document.getElementById('docArea').style.display='none';
+
+  // Stats
+  const numCols=d.columns.filter(c=>d.columnTypes[c]==='number');
+  const colors=[C[0],C[2],C[1],C[3],C[4]];
+  numCols.slice(0,4).forEach((col,i)=>{
+    const s=d.stats[col];if(!s)return;
+    sa.innerHTML+=`<div class="stat"><div class="stat-l">${col}</div><div class="stat-v" style="color:${colors[i]}">${fmt(s.sum)}</div><div class="stat-s">Avg ${fmt(s.avg)} &middot; ${fmt(s.min)} &ndash; ${fmt(s.max)}</div></div>`;
   });
-  // Add row count card
-  statsRow.innerHTML += `
-    <div class="stat-card">
-      <div class="stat-label">Total Records</div>
-      <div class="stat-value" style="color:${COLORS[4]}">${data.rowCount.toLocaleString()}</div>
-      <div class="stat-sub">${data.columns.length} columns</div>
-    </div>`;
+  sa.innerHTML+=`<div class="stat"><div class="stat-l">Records</div><div class="stat-v" style="color:${C[4]}">${d.rowCount.toLocaleString()}</div><div class="stat-s">${d.columns.length} columns</div></div>`;
 
   // Charts
-  const chartsArea = document.getElementById('chartsArea');
-  chartsArea.innerHTML = '';
-  chartInstances.forEach(c => c.destroy());
-  chartInstances = [];
-
-  data.charts.forEach((chart, i) => {
-    const card = document.createElement('div');
-    card.className = 'chart-card';
-    card.innerHTML = `<h3>${chart.title}</h3><canvas id="auto-chart-${i}"></canvas>`;
-    chartsArea.appendChild(card);
-
-    setTimeout(() => {
-      const ctx = document.getElementById(`auto-chart-${i}`);
-      if (!ctx) return;
-      const inst = new Chart(ctx, {
-        type: chart.type,
-        data: {
-          labels: chart.labels,
-          datasets: chart.datasets.map((ds, di) => ({
-            ...ds,
-            backgroundColor: chart.type === 'doughnut'
-              ? COLORS.slice(0, chart.labels.length)
-              : COLORS[di] + 'CC',
-            borderColor: chart.type === 'line' ? COLORS[di] : undefined,
-            borderWidth: chart.type === 'line' ? 2 : 0,
-            borderRadius: chart.type === 'bar' ? 6 : 0,
-            fill: chart.type === 'line',
-            tension: 0.4,
-            pointRadius: chart.type === 'line' ? 3 : undefined,
-          })),
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: chart.type === 'doughnut', position: 'right', labels: { font: { family: 'Inter', size: 11 }, usePointStyle: true } } },
-          scales: chart.type === 'doughnut' ? {} : {
-            x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 }, maxRotation: 45 } },
-            y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { family: 'Inter', size: 10 } } },
-          },
-          cutout: chart.type === 'doughnut' ? '60%' : undefined,
-        },
-      });
-      chartInstances.push(inst);
-    }, 50);
+  const ca=document.getElementById('chartsArea');ca.innerHTML='';
+  d.charts.forEach((ch,i)=>{
+    const card=document.createElement('div');card.className='card';
+    card.innerHTML=`<h3><span class="dot" style="background:${C[i%C.length]}"></span>${ch.title}</h3><canvas id="ac${i}"></canvas>`;
+    ca.appendChild(card);
+    setTimeout(()=>makeChart(`ac${i}`,ch),30);
   });
 
-  // Data table
-  const thead = document.querySelector('#dataTable thead');
-  const tbody = document.querySelector('#dataTable tbody');
-  thead.innerHTML = '<tr>' + data.columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
-  tbody.innerHTML = data.preview.map(row =>
-    '<tr>' + data.columns.map(c => `<td>${row[c] != null ? row[c] : ''}</td>`).join('') + '</tr>'
-  ).join('');
-
-  // Suggestions
-  const suggestions = document.getElementById('suggestions');
-  const textCols = data.columns.filter(c => data.columnTypes[c] === 'text');
-  const suggestTexts = [
-    `What are my top ${textCols[0] || 'categories'}?`,
-    numCols[0] ? `Show me ${numCols[0]} trends` : 'Summarize this data',
-    'What patterns do you see?',
-    numCols[0] && textCols[0] ? `Compare ${numCols[0]} by ${textCols[0]}` : 'What stands out?',
-  ];
-  suggestions.innerHTML = suggestTexts.map(s => `<button class="suggestion-chip" onclick="askSuggestion(this)">${s}</button>`).join('');
-}
-
-async function sendChat() {
-  const input = document.getElementById('chatInput');
-  const msg = input.value.trim();
-  if (!msg || !sessionId) return;
-
-  const messages = document.getElementById('chatMessages');
-  const sendBtn = document.getElementById('chatSend');
-
-  // Add user message
-  messages.innerHTML += `<div class="chat-msg user">${escapeHtml(msg)}</div>`;
-  input.value = '';
-  sendBtn.disabled = true;
-
-  // Add typing indicator
-  const typing = document.createElement('div');
-  typing.className = 'chat-typing';
-  typing.textContent = 'Thinking...';
-  messages.appendChild(typing);
-  messages.scrollTop = messages.scrollHeight;
-
-  try {
-    const resp = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, message: msg }),
-    });
-    const data = await resp.json();
-    typing.remove();
-
-    if (!resp.ok) throw new Error(data.error);
-
-    // Add AI response
-    const aiMsg = document.createElement('div');
-    aiMsg.className = 'chat-msg ai';
-    aiMsg.innerHTML = formatAnswer(data.answer);
-
-    // If there's a chart, render it
-    if (data.chart) {
-      const chartDiv = document.createElement('div');
-      chartDiv.className = 'chart-inline';
-      const canvas = document.createElement('canvas');
-      canvas.style.maxHeight = '220px';
-      chartDiv.appendChild(canvas);
-      aiMsg.appendChild(chartDiv);
-      messages.appendChild(aiMsg);
-
-      const inst = new Chart(canvas, {
-        type: data.chart.type || 'bar',
-        data: {
-          labels: data.chart.labels,
-          datasets: (data.chart.datasets || []).map((ds, i) => ({
-            ...ds,
-            backgroundColor: data.chart.type === 'doughnut'
-              ? COLORS.slice(0, data.chart.labels.length)
-              : COLORS[i] + 'CC',
-            borderColor: data.chart.type === 'line' ? COLORS[i] : undefined,
-            borderWidth: data.chart.type === 'line' ? 2 : 0,
-            borderRadius: data.chart.type === 'bar' ? 6 : 0,
-            fill: data.chart.type === 'line',
-            tension: 0.4,
-          })),
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: data.chart.type === 'doughnut', position: 'right' } },
-          scales: data.chart.type === 'doughnut' ? {} : {
-            x: { grid: { display: false } },
-            y: { grid: { color: 'rgba(0,0,0,0.05)' } },
-          },
-        },
-      });
-      chartInstances.push(inst);
-    } else {
-      messages.appendChild(aiMsg);
-    }
-  } catch (err) {
-    typing.remove();
-    messages.innerHTML += `<div class="chat-msg ai" style="color:var(--red)">${err.message}</div>`;
+  // Table
+  if(d.preview&&d.preview.length){
+    document.getElementById('tableCard').style.display='block';
+    document.getElementById('rowBadge').textContent=`${d.rowCount} rows`;
+    const thead=document.querySelector('#tbl thead'),tbody=document.querySelector('#tbl tbody');
+    thead.innerHTML='<tr>'+d.columns.map(c=>`<th>${c}</th>`).join('')+'</tr>';
+    tbody.innerHTML=d.preview.map(r=>'<tr>'+d.columns.map(c=>`<td>${r[c]!=null?r[c]:''}</td>`).join('')+'</tr>').join('');
+  } else {
+    document.getElementById('tableCard').style.display='none';
   }
 
-  sendBtn.disabled = false;
-  messages.scrollTop = messages.scrollHeight;
+  makeSuggestions(d,numCols);
 }
 
-function askSuggestion(btn) {
-  document.getElementById('chatInput').value = btn.textContent;
-  sendChat();
+function makeSuggestions(d,numCols){
+  const tc=d.columns?d.columns.filter(c=>d.columnTypes[c]==='text'):[];
+  const suggestions=d.type==='document'||d.type==='text'?
+    ['Summarize this document','What are the key numbers?','What are the main takeaways?','Any red flags?']:
+    [`What are the top ${tc[0]||'items'}?`,numCols[0]?`Show ${numCols[0]} by ${tc[0]||'category'}`:'Summarize the data','What trends do you see?','What should I focus on?'];
+  document.getElementById('sugs').innerHTML=suggestions.map(s=>`<button class="sug" onclick="ask(this)">${s}</button>`).join('');
 }
 
-function loadDemo() {
-  // Generate demo CSV data
-  const headers = ['Month','Product','Category','Revenue','Units Sold','Cost'];
-  const products = ['Widget Pro','Widget Lite','Gadget X','Gadget Mini','Service Plan'];
-  const categories = ['Electronics','Electronics','Accessories','Accessories','Services'];
-  const months = ['Jan 2025','Feb 2025','Mar 2025','Apr 2025','May 2025','Jun 2025','Jul 2025','Aug 2025','Sep 2025','Oct 2025','Nov 2025','Dec 2025'];
-
-  let csv = headers.join(',') + '\n';
-  months.forEach(m => {
-    products.forEach((p, pi) => {
-      const rev = Math.floor(Math.random() * 5000 + 2000);
-      const units = Math.floor(Math.random() * 200 + 50);
-      const cost = Math.floor(rev * (0.4 + Math.random() * 0.2));
-      csv += `${m},${p},${categories[pi]},${rev},${units},${cost}\n`;
-    });
+function makeChart(id,ch){
+  const ctx=document.getElementById(id);if(!ctx)return;
+  const inst=new Chart(ctx,{
+    type:ch.type,
+    data:{labels:ch.labels,datasets:(ch.datasets||[]).map((ds,i)=>({
+      ...ds,
+      backgroundColor:ch.type==='doughnut'||ch.type==='polarArea'?C.slice(0,ch.labels.length).map(c=>c+'CC'):C[i]+'CC',
+      borderColor:ch.type==='line'?C[i]:ch.type==='doughnut'?'#fff':undefined,
+      borderWidth:ch.type==='line'?2.5:ch.type==='doughnut'?2:0,
+      borderRadius:ch.type==='bar'?8:0,
+      fill:ch.type==='line',tension:.4,pointRadius:ch.type==='line'?3:undefined,pointBackgroundColor:ch.type==='line'?C[i]:undefined,
+    }))},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:ch.type==='doughnut'||ch.type==='polarArea',position:'right',labels:{font:{family:'Inter',size:11},usePointStyle:true,padding:12}}},
+      scales:ch.type==='doughnut'||ch.type==='polarArea'?{}:{
+        x:{grid:{display:false},ticks:{font:{family:'Inter',size:10},maxRotation:45}},
+        y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'Inter',size:10}}},
+      },
+      cutout:ch.type==='doughnut'?'62%':undefined,
+    },
   });
-
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const file = new File([blob], 'demo_sales_data.csv', { type: 'text/csv' });
-  uploadFile(file);
+  charts.push(inst);
 }
 
-function resetApp() {
-  sessionId = null;
-  document.getElementById('uploadScreen').classList.remove('hidden');
-  document.getElementById('dashboard').classList.remove('show');
-  document.getElementById('currentFile').innerHTML = '';
-  document.getElementById('chatMessages').innerHTML = '<div class="chat-msg ai">Hi! I\'ve analyzed your data. Ask me anything.</div>';
-  chartInstances.forEach(c => c.destroy());
-  chartInstances = [];
+async function send(){
+  const inp=document.getElementById('chatIn'),msg=inp.value.trim();
+  if(!msg||!sid)return;
+  const msgs=document.getElementById('msgs'),btn=document.getElementById('sendBtn');
+  msgs.innerHTML+=`<div class="msg u">${esc(msg)}</div>`;
+  inp.value='';btn.disabled=true;
+  const typing=document.createElement('div');
+  typing.className='typing';typing.innerHTML='<div class="dots"><span></span><span></span><span></span></div>Thinking...';
+  msgs.appendChild(typing);msgs.scrollTop=msgs.scrollHeight;
+
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid,message:msg})});
+    const d=await r.json();typing.remove();
+    if(!r.ok)throw new Error(d.error);
+    const ai=document.createElement('div');ai.className='msg a';
+    ai.innerHTML=fmtAns(d.answer);
+    if(d.chart){
+      const ci=document.createElement('div');ci.className='ci';
+      const cv=document.createElement('canvas');cv.style.maxHeight='200px';
+      ci.appendChild(cv);ai.appendChild(ci);msgs.appendChild(ai);
+      makeChart(null,d.chart);
+      // Manual chart since we don't have an ID
+      const inst=new Chart(cv,{
+        type:d.chart.type||'bar',
+        data:{labels:d.chart.labels,datasets:(d.chart.datasets||[]).map((ds,i)=>({
+          ...ds,backgroundColor:d.chart.type==='doughnut'?C.slice(0,d.chart.labels.length).map(c=>c+'CC'):C[i]+'CC',
+          borderColor:d.chart.type==='line'?C[i]:undefined,borderWidth:d.chart.type==='line'?2:0,borderRadius:d.chart.type==='bar'?6:0,fill:d.chart.type==='line',tension:.4,
+        }))},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:d.chart.type==='doughnut'}},
+          scales:d.chart.type==='doughnut'?{}:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,.04)'}}},
+        },
+      });
+      charts.push(inst);
+    } else { msgs.appendChild(ai); }
+  }catch(e){typing.remove();msgs.innerHTML+=`<div class="msg a" style="color:var(--r)">${e.message}</div>`}
+  btn.disabled=false;msgs.scrollTop=msgs.scrollHeight;
 }
 
-function formatNum(n) {
-  if (n == null || isNaN(n)) return '0';
-  if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (Math.abs(n) >= 1000) return (n / 1000).toFixed(1) + 'K';
-  return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-function escapeHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
-
-function formatAnswer(text) {
-  return escapeHtml(text)
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
-}
+function ask(btn){document.getElementById('chatIn').value=btn.textContent;send()}
+function reset(){sid=null;document.getElementById('upScreen').classList.remove('gone');document.getElementById('dash').classList.remove('on');document.getElementById('curFile').style.display='none';document.getElementById('newBtn').style.display='none';document.getElementById('msgs').innerHTML='<div class="msg a">Hi! I\'ve analyzed your data. Ask me anything in plain English.</div>';charts.forEach(c=>c.destroy());charts=[]}
+function showLoader(t){document.getElementById('loader').classList.add('on');document.getElementById('loaderText').textContent=t;document.getElementById('err').textContent=''}
+function hideLoader(){document.getElementById('loader').classList.remove('on')}
+function showErr(t){document.getElementById('err').textContent=t;hideLoader()}
+function fmt(n){if(n==null||isNaN(n))return'0';if(Math.abs(n)>=1e6)return(n/1e6).toFixed(1)+'M';if(Math.abs(n)>=1e3)return(n/1e3).toFixed(1)+'K';return Number(n).toLocaleString(undefined,{maximumFractionDigits:2})}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function fmtAns(t){return esc(t).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
 </script>
 </body>
 </html>
