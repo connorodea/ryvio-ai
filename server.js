@@ -109,7 +109,112 @@ app.post('/api/paste', async (req, res) => {
   }
 });
 
-// ── AI Chat ──
+// ── Import from URL (Google Sheets, Drive, Dropbox, any link) ──
+app.post('/api/url', async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url || !url.trim()) return res.status(400).json({ error: 'No URL provided' });
+
+    let fetchUrl = url.trim();
+    let filename = 'Imported data';
+
+    // Google Sheets → CSV export
+    const sheetsMatch = fetchUrl.match(/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (sheetsMatch) {
+      const gid = fetchUrl.match(/gid=(\d+)/);
+      fetchUrl = `https://docs.google.com/spreadsheets/d/${sheetsMatch[1]}/export?format=csv${gid ? '&gid=' + gid[1] : ''}`;
+      filename = 'Google Sheet';
+    }
+
+    // Google Drive file → direct download
+    const driveMatch = fetchUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (driveMatch) {
+      fetchUrl = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+      filename = 'Google Drive file';
+    }
+
+    // Google Drive open → direct download
+    const driveOpen = fetchUrl.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+    if (driveOpen) {
+      fetchUrl = `https://drive.google.com/uc?export=download&id=${driveOpen[1]}`;
+      filename = 'Google Drive file';
+    }
+
+    // Dropbox → direct download
+    if (fetchUrl.includes('dropbox.com')) {
+      fetchUrl = fetchUrl.replace('dl=0', 'dl=1').replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+      filename = 'Dropbox file';
+    }
+
+    // OneDrive → direct download
+    if (fetchUrl.includes('1drv.ms') || fetchUrl.includes('onedrive.live.com')) {
+      fetchUrl = fetchUrl.replace('redir', 'download');
+      filename = 'OneDrive file';
+    }
+
+    // Fetch the URL
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    const response = await fetch(fetchUrl, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'RyvioAI/1.0' },
+      redirect: 'follow',
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) throw new Error(`Could not fetch URL (status ${response.status}). Make sure the link is public/shared.`);
+
+    const contentType = response.headers.get('content-type') || '';
+    const body = await response.text();
+
+    let result;
+
+    // Try to parse as CSV/TSV first
+    result = tryParseTable(body);
+    if (result && result.rows && result.rows.length > 1) {
+      result.summary = `Imported ${result.rows.length} rows from ${filename}`;
+    } else if (contentType.includes('json')) {
+      // Try JSON
+      try {
+        const raw = JSON.parse(body);
+        const arr = Array.isArray(raw) ? raw : raw.data || raw.results || raw.items || raw.records || [raw];
+        if (Array.isArray(arr) && arr.length > 0 && typeof arr[0] === 'object') {
+          result = buildTabular(arr.map(r => flattenObj(r)));
+          result.summary = `Imported ${result.rows.length} records from JSON`;
+        }
+      } catch {}
+    }
+
+    if (!result || !result.rows || result.rows.length === 0) {
+      // Treat as raw text/HTML
+      const cleanText = body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      result = { type: 'document', rawText: cleanText.slice(0, 50000), rows: null, columns: null, columnTypes: null, summary: `Imported content from URL (${cleanText.length} characters)` };
+    }
+
+    const sessionId = genId();
+    sessions.set(sessionId, { ...result, filename });
+
+    res.json({
+      sessionId,
+      filename,
+      type: result.type,
+      rowCount: result.rows ? result.rows.length : 0,
+      columns: result.columns || [],
+      columnTypes: result.columnTypes || {},
+      preview: result.rows ? result.rows.slice(0, 15) : [],
+      stats: result.rows ? computeStats(result) : {},
+      charts: result.rows ? autoCharts(result) : [],
+      rawText: result.rawText || null,
+      summary: result.summary || null,
+    });
+  } catch (err) {
+    console.error('URL import error:', err);
+    const msg = err.name === 'AbortError' ? 'Request timed out. Try a different URL.' : (err.message || 'Could not fetch URL.');
+    res.status(500).json({ error: msg });
+  }
+});
+
+
 app.post('/api/chat', async (req, res) => {
   try {
     const { sessionId, message } = req.body;

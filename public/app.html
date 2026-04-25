@@ -59,6 +59,17 @@
     .paste-area textarea::placeholder{color:var(--tx3)}
     .paste-actions{display:flex;gap:10px;margin-top:12px;justify-content:flex-end}
 
+    /* URL Mode */
+    .url-area{width:100%;max-width:600px;display:none}
+    .url-area.show{display:block}
+    .url-input-row{display:flex;gap:10px}
+    .url-area input{flex:1;padding:14px 18px;font-size:14px;border:1.5px solid var(--bd);border-radius:12px;outline:none;font-family:inherit;background:var(--white);transition:border-color .2s}
+    .url-area input:focus{border-color:var(--p)}
+    .url-area input::placeholder{color:var(--tx3)}
+    .url-hints{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;justify-content:center}
+    .url-hint{font-size:11px;color:var(--tx3);background:var(--bd2);padding:4px 10px;border-radius:8px;display:flex;align-items:center;gap:5px}
+    .url-hint svg{width:14px;height:14px}
+
     .or{color:var(--tx3);font-size:13px;margin:20px 0;font-weight:500}
     .demo-btn{padding:10px 24px;font-size:13px;font-weight:600;color:var(--p);background:var(--white);border:1.5px solid var(--bd);border-radius:10px;cursor:pointer;font-family:inherit;transition:all .2s}
     .demo-btn:hover{border-color:var(--p);background:rgba(79,107,237,.04)}
@@ -168,6 +179,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
       Photo / Screenshot
     </button>
+    <button class="mode-btn" onclick="setMode('url',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      Link / URL
+    </button>
   </div>
 
   <!-- File Drop -->
@@ -187,6 +202,20 @@
     <textarea id="pasteBox" placeholder="Paste your data here...&#10;&#10;Examples:&#10;- Copy a table from a website&#10;- Paste rows from a spreadsheet&#10;- Paste a list of numbers&#10;- Paste any text you want analyzed"></textarea>
     <div class="paste-actions">
       <button class="btn-sm btn-pri" onclick="submitPaste()">Analyze This</button>
+    </div>
+  </div>
+
+  <!-- URL Input -->
+  <div class="url-area" id="urlArea">
+    <div class="url-input-row">
+      <input type="url" id="urlIn" placeholder="Paste a Google Sheets, Drive, Dropbox, or any data URL..." onkeydown="if(event.key==='Enter')submitUrl()">
+      <button class="btn-lg" onclick="submitUrl()" style="padding:14px 24px;font-size:14px">Import</button>
+    </div>
+    <div class="url-hints">
+      <span class="url-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 3v18"/></svg> Google Sheets</span>
+      <span class="url-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Google Drive</span>
+      <span class="url-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Dropbox</span>
+      <span class="url-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg> Any CSV/JSON URL</span>
     </div>
   </div>
 
@@ -235,9 +264,10 @@ let sid=null,charts=[];
 function setMode(mode,btn){
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const dz=document.getElementById('dropZone'),pa=document.getElementById('pasteArea'),fi=document.getElementById('fIn');
-  dz.style.display=mode==='paste'?'none':'block';
+  const dz=document.getElementById('dropZone'),pa=document.getElementById('pasteArea'),ua=document.getElementById('urlArea'),fi=document.getElementById('fIn');
+  dz.style.display=(mode==='paste'||mode==='url')?'none':'block';
   pa.classList.toggle('show',mode==='paste');
+  ua.classList.toggle('show',mode==='url');
   if(mode==='photo'){
     fi.accept='.png,.jpg,.jpeg,.webp,.gif,.bmp';
     document.getElementById('dropIcon').innerHTML='&#128247;';
@@ -280,6 +310,20 @@ async function submitPaste(){
   showLoader('Analyzing pasted data...');
   try{
     const r=await fetch('/api/paste',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error);
+    sid=d.sessionId;
+    render(d);
+  }catch(e){showErr(e.message)}
+  finally{hideLoader()}
+}
+
+async function submitUrl(){
+  const url=document.getElementById('urlIn').value.trim();
+  if(!url)return;
+  showLoader('Importing from URL...');
+  try{
+    const r=await fetch('/api/url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
     const d=await r.json();
     if(!r.ok)throw new Error(d.error);
     sid=d.sessionId;
